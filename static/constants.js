@@ -17,7 +17,12 @@ export const KEY_BINDINGS = {
     interactions: {
         ceilingLight: '1',
         lamp: '2',
-        moodLight: '3'
+        moodLight: '3',
+        tv: '4',
+        door: '5',
+        windows: '6',
+        volumeUp: '7',
+        volumeDown: '8'
     }
 };
 
