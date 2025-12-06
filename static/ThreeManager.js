@@ -2,7 +2,6 @@
 import * as THREE from "three";
 
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {Reflector} from 'three/addons/objects/Reflector.js';
 
 import {Camera} from "./Camera.js";
 
@@ -22,7 +21,7 @@ export class ThreeManager {
 
         this.camera = new Camera(app, this.renderer);
 
-        this.inputData = {rotation: 0};
+        this.inputData = {rotation: 0, joystick_x: 0, joystick_y: 0};
 
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -50,7 +49,7 @@ export class ThreeManager {
             } catch (error) {
                 console.error("error:", error);
             } finally {
-                setTimeout(fetchData, 100);
+                setTimeout(fetchData, 50);
             }
         };
 
@@ -82,25 +81,6 @@ export class ThreeManager {
                     if (noShadows.includes(item.material.name)) {
                         item.castShadow = false;
                         item.receiveShadow = false;
-                    }
-
-                    if (item.material.name === "mirror") {
-                        // swap out the mirror with a reflector object
-                        const mirrorGeometry = new THREE.PlaneGeometry(0.8, 1.6, 1, 1);
-                        const mirror = new Reflector(mirrorGeometry, {
-                            clipBias: 0.003,
-                            textureWidth: window.innerWidth * window.devicePixelRatio,
-                            textureHeight: window.innerHeight * window.devicePixelRatio,
-                            color: 0xbbbbbb
-                        });
-
-                        mirror.position.copy(item.position);
-                        mirror.rotation.set(0, -Math.PI / 2, 0)
-
-                        this.mirrorReflector = mirror;
-                        this.mirrorReflector.visible = false;
-
-                        this.scene.add(this.mirrorReflector);
                     }
                 }
             }.bind(this));
@@ -142,18 +122,11 @@ export class ThreeManager {
         this.scene.add(ambientLight);
     }
 
-    initControls() {
-        this.inputX = 0;
-        this.inputY = 0;
-        this.isTouching = false;
-    }
-
     initAllThree() {
         return new Promise((resolve, reject) => {
             try {
                 this.initScene();
                 this.camera.initCamera();
-                this.initControls();
                 resolve(this.ready = true);
             } catch (error) {
                 reject(error);

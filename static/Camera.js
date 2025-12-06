@@ -4,7 +4,6 @@ import CameraControls from "https://cdn.jsdelivr.net/npm/camera-controls@2.8.5/+
 
 import {
     baseFov,
-    cameraPositions,
     maxFov,
     minFov,
 } from "./constants.js";
@@ -14,14 +13,13 @@ CameraControls.install({THREE: THREE});
 export class Camera {
     constructor(app, renderer) {
         this.renderer = renderer;
-        this.index = 0;
         this.camera = new THREE.PerspectiveCamera(THREE.MathUtils.clamp(baseFov / (window.innerWidth / window.innerHeight) * 1.5, minFov, maxFov), window.innerWidth / window.innerHeight, 0.1, 1000);
         this.cameraControls = new CameraControls(this.camera, this.renderer.domElement);
         this.clock = new THREE.Clock();
     }
 
     initCamera() {
-        this.cameraControls.distance = this.cameraControls.minDistance = this.cameraControls.maxDistance = 0.1;
+        this.cameraControls.distance = 0.1;
 
         this.cameraControls.mouseButtons.left = CameraControls.ACTION.NONE;
         this.cameraControls.mouseButtons.right = CameraControls.ACTION.NONE;
@@ -30,6 +28,9 @@ export class Camera {
         this.cameraControls.touches.one = CameraControls.ACTION.NONE;
         this.cameraControls.touches.two = CameraControls.ACTION.NONE;
         this.cameraControls.touches.three = CameraControls.ACTION.NONE;
+
+        this.cameraControls.smoothTime = 0.1
+        this.cameraControls.moveTo(3, 1, 0, false);
 
         this.cameraControls.saveState();
         this.cameraControls.update(this.clock.getDelta());
@@ -43,13 +44,18 @@ export class Camera {
     }
 
     update(inputData) {
-        let cameraPos = cameraPositions[this.index].pos
-        this.cameraControls.moveTo(cameraPos[0], cameraPos[1], cameraPos[2], true)
-
-        let rotation = inputData.rotation
-        this.cameraControls.rotateTo(rotation, 0, true)
-
         console.log(inputData)
+
+        let targetRotation = -inputData.rotation;
+        let currentRotation = this.cameraControls.azimuthAngle;
+
+        let deltaRotation = targetRotation - currentRotation;
+        deltaRotation = THREE.MathUtils.euclideanModulo(deltaRotation + Math.PI, 2 * Math.PI) - Math.PI;
+
+        this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2, true);
+        this.cameraControls.forward(inputData.joystick_y * 0.01, true)
+        this.cameraControls.truck(inputData.joystick_x * 0.01, 0, true)
+
         this.cameraControls.update(this.clock.getDelta());
     }
 }
