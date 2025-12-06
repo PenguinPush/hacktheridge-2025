@@ -17,10 +17,12 @@ export class ThreeManager {
 
         this.renderer = new THREE.WebGLRenderer({antialias: true});
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio)
+        this.renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById("view").appendChild(this.renderer.domElement);
 
         this.camera = new Camera(app, this.renderer);
+
+        this.inputData = {rotation_x: 0, rotation_y: 0};
 
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -28,8 +30,38 @@ export class ThreeManager {
         this.renderer.shadowMap.needsUpdate = true;
 
         this.ready = false;
-        this.initAllThree().then(() => this.app.update());
+        this.initAllThree().then(() => {
+            this.fetchInputData();
+            this.app.update();
+        });
     }
+
+    fetchInputData() {
+        const url = "http://127.0.0.1:5000/input_data";
+
+        const fetchData = async () => {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    this.inputData = await response.json();
+                } else {
+                    console.error("failed to fetch");
+                }
+            } catch (error) {
+                console.error("error:", error);
+            } finally {
+                setTimeout(fetchData, 100); // Poll every 100ms
+            }
+        };
+
+        fetchData();
+    }
+
+    update() {
+        this.camera.update(this.inputData);
+        this.renderer.render(this.scene, this.camera.camera);
+    }
+
 
     initScene() {
         this.scene = new THREE.Scene();
@@ -114,11 +146,6 @@ export class ThreeManager {
         this.inputX = 0;
         this.inputY = 0;
         this.isTouching = false;
-    }
-
-    update() {
-        this.camera.update(this.inputX, this.inputY, this.isTouching);
-        this.renderer.render(this.scene, this.camera.camera);
     }
 
     initAllThree() {
