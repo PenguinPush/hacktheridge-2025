@@ -5,8 +5,12 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 import {Camera} from "./Camera.js";
 
+import {InputManager} from "./InputManager.js";
+import {InteractionManager} from "./InteractionManager.js";
+
 import {
     noShadows,
+    KEY_BINDINGS,
 } from "./constants.js";
 
 // everything 3d
@@ -27,6 +31,12 @@ export class ThreeManager {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.shadowMap.autoUpdate = false;
         this.renderer.shadowMap.needsUpdate = true;
+
+        // Initialize input and interaction managers
+        this.inputManager = new InputManager();
+        
+        // Store original light intensities for toggle functionality
+        this.originalLightIntensities = {};
 
         this.ready = false;
         this.initAllThree().then(() => {
@@ -120,6 +130,39 @@ export class ThreeManager {
         this.scene.add(this.lamp);
         this.scene.add(this.moodLight);
         this.scene.add(ambientLight);
+        
+        // Store original light intensities (all lights default to "on" state)
+        this.originalLightIntensities.ceilingLight = this.light.intensity;
+        this.originalLightIntensities.lamp = this.lamp.intensity;
+        this.originalLightIntensities.moodLight = this.moodLight.intensity;
+        
+        // Initialize InteractionManager after scene is set up
+        this.interactionManager = new InteractionManager(this.scene, this.inputManager);
+        console.log('InteractionManager initialized');
+        
+        // Register ceiling light as interactive object
+        this.interactionManager.registerInteractiveObject(
+            'ceilingLight',
+            this.light,
+            {
+                key: KEY_BINDINGS.interactions.ceilingLight,
+                type: 'toggle',
+                initialState: true, // Default "on" state
+                onInteract: (state, lightObject) => {
+                    console.log(`Light toggle! State: ${state}, Intensity: ${state ? this.originalLightIntensities.ceilingLight : 0}`);
+                    if (state) {
+                        // Turn light on - restore original intensity
+                        lightObject.intensity = this.originalLightIntensities.ceilingLight;
+                    } else {
+                        // Turn light off - set intensity to 0
+                        lightObject.intensity = 0;
+                    }
+                    // Update shadow map when light state changes
+                    this.renderer.shadowMap.needsUpdate = true;
+                }
+            }
+        );
+        console.log('Ceiling light registered with key:', KEY_BINDINGS.interactions.ceilingLight);
     }
 
     initAllThree() {
