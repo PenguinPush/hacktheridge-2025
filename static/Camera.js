@@ -52,10 +52,10 @@ export class Camera {
 
 
         if (inputData.axis === 'x') {
-            this.cameraControls.rotateTo(currentRotation + deltaRotation - inputData.value * 0.1, Math.PI / 2, true);
+            this.cameraControls.rotateTo(currentRotation + deltaRotation - inputData.value * 0.05, Math.PI / 2, true);
 
         } else if (inputData.axis === 'y') {
-            this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2 + inputData.value * 0.1, true);
+            this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2 + inputData.value * 0.05, true);
         } else {
             this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2, true);
         }

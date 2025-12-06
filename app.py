@@ -7,6 +7,13 @@ from gestureHandler import GestureHandler
 app = Flask(__name__)
 
 input_data = {}
+button_mapping = {
+    "ceilingLight": "zr",
+    "lamp": "r",
+    "volume": "y",
+    "door": "a",
+    "windows": "b"
+}
 
 def update():
     global input_data
@@ -42,8 +49,11 @@ def update():
             for event in joycon_r.events():
                 button, state = event
                 if state == 1:
-                    joycon_r.reset_orientation()
-                    tracking_gesture = True
+                    for item, mapped_button in button_mapping.items():
+                        if button == mapped_button:
+                            joycon_r.reset_orientation()
+                            tracking_gesture = item
+                            break
                 elif state == 0:
                     tracking_gesture = False
 
@@ -54,6 +64,9 @@ def update():
             gesture = gestureHandler.update(joycon_r.pointer, tracking_gesture)
             input_data["axis"] = gesture["axis"]
             input_data["value"] = gesture["value"]
+            if tracking_gesture:
+                input_data[item] = gesture["value"]
+                print(input_data, item)
 
         time.sleep(0.05)
 
