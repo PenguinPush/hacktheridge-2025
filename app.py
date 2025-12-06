@@ -2,22 +2,30 @@ from flask import Flask, jsonify, render_template
 from threading import Thread
 import time
 from pyjoycon import GyroTrackingJoyCon, ButtonEventJoyCon, get_L_id, get_R_id
-import math
+from gestureHandler import GestureHandler
 
 app = Flask(__name__)
 
-input_data = {"rotation": 0}
-
+input_data = {}
 
 def update():
     global input_data
     deadzone = 0.2
+
+    gestureHandler = GestureHandler()
+    tracking_gesture = False
 
     if joycon_l:
         sticks = joycon_l.stick_l
 
     while True:
         if joycon_l:
+            for event in joycon_l.events():
+                button, state = event
+                if button == "left_sl" and state:
+                    print("left_sl button pressed")
+                    joycon_l.reset_orientation()
+
             joystick_x = (joycon_l.stick_l[0] - sticks[0]) / 1200
             joystick_y = (joycon_l.stick_l[1] - sticks[1]) / 1050
 
@@ -30,9 +38,26 @@ def update():
             input_data["joystick_y"] = joystick_y
             input_data["rotation"] = joycon_l.rotation.z
 
-            print(input_data)
+        if joycon_r:
+            for event in joycon_r.events():
+                button, state = event
+                if button == "zr" and state == 1:
+                    joycon_r.reset_orientation()
+                    tracking_gesture = True
+                elif button == "zr" and state == 0:
+                    tracking_gesture = False
+
+            if tracking_gesture:
+                if joycon_r.pointer is None:
+                    tracking_gesture = False
+
+            gesture = gestureHandler.update(joycon_r.pointer, tracking_gesture)
+            print(gesture)
+            input_data["axis"] = gesture["axis"]
+            input_data["value"] = gesture["value"]
 
         time.sleep(0.05)
+
 
 @app.route('/')
 def main():
@@ -67,11 +92,12 @@ if __name__ == '__main__':
     try:
         if joycon_l_id:
             joycon_l = WrappedJoyCon(*joycon_l_id)
+            print("left")
         if joycon_r_id:
             joycon_r = WrappedJoyCon(*joycon_r_id)
+            print("right")
     except Exception as e:
         print(f"Error initializing JoyCons: {e}")
-
 
     update_thread = Thread(target=update, daemon=True)
     update_thread.start()

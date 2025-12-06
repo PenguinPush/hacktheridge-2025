@@ -30,7 +30,7 @@ export class Camera {
         this.cameraControls.touches.three = CameraControls.ACTION.NONE;
 
         this.cameraControls.smoothTime = 0.1
-        this.cameraControls.moveTo(3, 1, 0, false);
+        this.cameraControls.moveTo(3, 1.2, 0, false);
 
         this.cameraControls.saveState();
         this.cameraControls.update(this.clock.getDelta());
@@ -52,7 +52,16 @@ export class Camera {
         let deltaRotation = targetRotation - currentRotation;
         deltaRotation = THREE.MathUtils.euclideanModulo(deltaRotation + Math.PI, 2 * Math.PI) - Math.PI;
 
-        this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2, true);
+
+        if (inputData.axis === 'x') {
+            this.cameraControls.rotateTo(currentRotation + deltaRotation - inputData.value * 0.1, Math.PI / 2, true);
+
+        } else if (inputData.axis === 'y') {
+            this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2 + inputData.value * 0.1, true);
+        } else {
+            this.cameraControls.rotateTo(currentRotation + deltaRotation, Math.PI / 2, true);
+        }
+
         this.cameraControls.forward(inputData.joystick_y * 0.01, true)
         this.cameraControls.truck(inputData.joystick_x * 0.01, 0, true)
 
