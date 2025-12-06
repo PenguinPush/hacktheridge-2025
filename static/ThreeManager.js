@@ -66,12 +66,6 @@ export class ThreeManager {
         fetchData();
     }
 
-    update() {
-        this.camera.update(this.inputData);
-        this.renderer.render(this.scene, this.camera.camera);
-    }
-
-
     initScene() {
         this.scene = new THREE.Scene();
         const loader = new GLTFLoader();
@@ -87,6 +81,30 @@ export class ThreeManager {
                     item.dispose();
                 }
 
+                // Identify door mesh by name
+                if (item.name && item.name.toLowerCase().includes('door')) {
+                    console.log('Door found:', item.name);
+                    this.doorMesh = item;
+                    // Store original rotation for animation
+                    this.doorOriginalRotation = item.rotation.y;
+                }
+
+                // Identify window meshes by name
+                if (item.name && item.name.toLowerCase().includes('window')) {
+                    console.log('Window found:', item.name);
+                    if (!this.windowMeshes) {
+                        this.windowMeshes = [];
+                        this.windowOriginalRotations = [];
+                    }
+                    this.windowMeshes.push(item);
+                    // Store original rotation for each window
+                    this.windowOriginalRotations.push({
+                        x: item.rotation.x,
+                        y: item.rotation.y,
+                        z: item.rotation.z
+                    });
+                }
+
                 if (item.material) {
                     if (noShadows.includes(item.material.name)) {
                         item.castShadow = false;
@@ -96,6 +114,14 @@ export class ThreeManager {
             }.bind(this));
 
             this.scene.add(room);
+            
+            // Log all object names to help identify meshes
+            console.log('Scene objects:');
+            room.traverse(function (item) {
+                if (item.name) {
+                    console.log(' -', item.name, item.type);
+                }
+            });
         }.bind(this))
 
         this.light = new THREE.PointLight(0xffe7d0, 3, 0, 1);
@@ -140,6 +166,12 @@ export class ThreeManager {
         this.interactionManager = new InteractionManager(this.scene, this.inputManager);
         console.log('InteractionManager initialized');
         
+        // Music volume state
+        this.musicVolume = 0.5; // Default 50%
+        
+        // RGB light brightness state
+        this.rgbBrightness = 0.5; // Default 50% (intensity multiplier)
+        
         // Register ceiling light as interactive object
         this.interactionManager.registerInteractiveObject(
             'ceilingLight',
@@ -147,22 +179,225 @@ export class ThreeManager {
             {
                 key: KEY_BINDINGS.interactions.ceilingLight,
                 type: 'toggle',
-                initialState: true, // Default "on" state
+                initialState: true,
                 onInteract: (state, lightObject) => {
-                    console.log(`Light toggle! State: ${state}, Intensity: ${state ? this.originalLightIntensities.ceilingLight : 0}`);
-                    if (state) {
-                        // Turn light on - restore original intensity
-                        lightObject.intensity = this.originalLightIntensities.ceilingLight;
-                    } else {
-                        // Turn light off - set intensity to 0
-                        lightObject.intensity = 0;
-                    }
-                    // Update shadow map when light state changes
+                    console.log(`Ceiling light toggle! State: ${state}`);
+                    lightObject.intensity = state ? this.originalLightIntensities.ceilingLight : 0;
                     this.renderer.shadowMap.needsUpdate = true;
                 }
             }
         );
-        console.log('Ceiling light registered with key:', KEY_BINDINGS.interactions.ceilingLight);
+        
+        // Register lamp as interactive object
+        this.interactionManager.registerInteractiveObject(
+            'lamp',
+            this.lamp,
+            {
+                key: KEY_BINDINGS.interactions.lamp,
+                type: 'toggle',
+                initialState: true,
+                onInteract: (state, lightObject) => {
+                    console.log(`Lamp toggle! State: ${state}`);
+                    lightObject.intensity = state ? this.originalLightIntensities.lamp : 0;
+                    this.renderer.shadowMap.needsUpdate = true;
+                }
+            }
+        );
+        
+        // Register mood light as interactive object
+        this.interactionManager.registerInteractiveObject(
+            'moodLight',
+            this.moodLight,
+            {
+                key: KEY_BINDINGS.interactions.moodLight,
+                type: 'toggle',
+                initialState: true,
+                onInteract: (state, lightObject) => {
+                    console.log(`Mood light toggle! State: ${state}`);
+                    lightObject.intensity = state ? this.originalLightIntensities.moodLight * this.rgbBrightness : 0;
+                }
+            }
+        );
+        
+        // Register TV as interactive object (using a placeholder object)
+        this.tvState = { on: false };
+        this.interactionManager.registerInteractiveObject(
+            'tv',
+            this.scene, // Using scene as placeholder since TV mesh needs to be found
+            {
+                key: KEY_BINDINGS.interactions.tv,
+                type: 'toggle',
+                initialState: false,
+                onInteract: (state) => {
+                    console.log(`TV toggle! State: ${state ? 'ON' : 'OFF'}`);
+                    this.tvState.on = state;
+                    // TODO: Update TV material/emission when TV mesh is identified
+                }
+            }
+        );
+        
+        // Register door as interactive object
+        this.doorState = { open: false, targetRotation: 0, currentRotation: 0 };
+        this.interactionManager.registerInteractiveObject(
+            'door',
+            this.scene,
+            {
+                key: KEY_BINDINGS.interactions.door,
+                type: 'toggle',
+                initialState: false,
+                onInteract: (state) => {
+                    console.log(`Door ${state ? 'OPEN' : 'CLOSED'}`);
+                    this.doorState.open = state;
+                    // Set target rotation: open = 90 degrees, closed = 0 degrees
+                    this.doorState.targetRotation = state ? Math.PI / 2 : 0;
+                }
+            }
+        );
+        
+        // Register windows as interactive object
+        this.windowsState = { open: false, targetRotation: 0, currentRotation: 0 };
+        this.interactionManager.registerInteractiveObject(
+            'windows',
+            this.scene,
+            {
+                key: KEY_BINDINGS.interactions.windows,
+                type: 'toggle',
+                initialState: false,
+                onInteract: (state) => {
+                    console.log(`Windows ${state ? 'OPEN' : 'CLOSED'}`);
+                    this.windowsState.open = state;
+                    // Set target rotation: open = 45 degrees, closed = 0 degrees
+                    this.windowsState.targetRotation = state ? Math.PI / 4 : 0;
+                }
+            }
+        );
+        
+        // Register volume up
+        this.interactionManager.registerInteractiveObject(
+            'volumeUp',
+            this.scene,
+            {
+                key: KEY_BINDINGS.interactions.volumeUp,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.musicVolume = Math.min(1.0, this.musicVolume + 0.1);
+                        console.log(`Volume UP: ${Math.round(this.musicVolume * 100)}%`);
+                        // TODO: Update audio volume when audio is implemented
+                    }
+                }
+            }
+        );
+        
+        // Register volume down
+        this.interactionManager.registerInteractiveObject(
+            'volumeDown',
+            this.scene,
+            {
+                key: KEY_BINDINGS.interactions.volumeDown,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.musicVolume = Math.max(0.0, this.musicVolume - 0.1);
+                        console.log(`Volume DOWN: ${Math.round(this.musicVolume * 100)}%`);
+                        // TODO: Update audio volume when audio is implemented
+                    }
+                }
+            }
+        );
+        
+        // Register RGB brightness up
+        this.interactionManager.registerInteractiveObject(
+            'rgbBrightnessUp',
+            this.moodLight,
+            {
+                key: KEY_BINDINGS.interactions.rgbBrightnessUp,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.rgbBrightness = Math.min(1.0, this.rgbBrightness + 0.1);
+                        const moodLightState = this.interactionManager.getObjectState('moodLight');
+                        if (moodLightState) {
+                            this.moodLight.intensity = this.originalLightIntensities.moodLight * this.rgbBrightness;
+                        }
+                        console.log(`RGB Brightness UP: ${Math.round(this.rgbBrightness * 100)}%`);
+                    }
+                }
+            }
+        );
+        
+        // Register RGB brightness down
+        this.interactionManager.registerInteractiveObject(
+            'rgbBrightnessDown',
+            this.moodLight,
+            {
+                key: KEY_BINDINGS.interactions.rgbBrightnessDown,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.rgbBrightness = Math.max(0.0, this.rgbBrightness - 0.1);
+                        const moodLightState = this.interactionManager.getObjectState('moodLight');
+                        if (moodLightState) {
+                            this.moodLight.intensity = this.originalLightIntensities.moodLight * this.rgbBrightness;
+                        }
+                        console.log(`RGB Brightness DOWN: ${Math.round(this.rgbBrightness * 100)}%`);
+                    }
+                }
+            }
+        );
+    }
+
+    initControls() {
+        this.inputX = 0;
+        this.inputY = 0;
+        this.isTouching = false;
+    }
+
+    update() {
+        // Update input manager first to process key states
+        if (this.inputManager) {
+            this.inputManager.update();
+        }
+        
+        // Update interaction manager to handle interactions
+        if (this.interactionManager) {
+            this.interactionManager.update();
+        }
+        
+        // Animate door rotation smoothly
+        if (this.doorMesh && this.doorState) {
+            const rotationSpeed = 0.05; // Smooth animation speed
+            const diff = this.doorState.targetRotation - this.doorState.currentRotation;
+            
+            if (Math.abs(diff) > 0.001) {
+                this.doorState.currentRotation += diff * rotationSpeed;
+                this.doorMesh.rotation.y = this.doorOriginalRotation + this.doorState.currentRotation;
+            }
+        }
+
+        // Animate windows rotation smoothly
+        if (this.windowMeshes && this.windowsState) {
+            const rotationSpeed = 0.05; // Smooth animation speed
+            const diff = this.windowsState.targetRotation - this.windowsState.currentRotation;
+            
+            if (Math.abs(diff) > 0.001) {
+                this.windowsState.currentRotation += diff * rotationSpeed;
+                
+                // Apply rotation to all window meshes
+                this.windowMeshes.forEach((windowMesh, index) => {
+                    const originalRot = this.windowOriginalRotations[index];
+                    // Rotate windows on their hinge axis (typically Y or Z axis)
+                    windowMesh.rotation.y = originalRot.y + this.windowsState.currentRotation;
+                });
+            }
+        }
+        
+        this.camera.update(this.inputData);
+        this.renderer.render(this.scene, this.camera.camera);
     }
 
     initAllThree() {
