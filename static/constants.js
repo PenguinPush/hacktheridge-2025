@@ -22,7 +22,9 @@ export const KEY_BINDINGS = {
         door: '5',
         windows: '6',
         volumeUp: '7',
-        volumeDown: '8'
+        volumeDown: '8',
+        rgbBrightnessUp: '9',
+        rgbBrightnessDown: '0'
     }
 };
 

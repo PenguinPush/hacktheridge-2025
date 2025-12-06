@@ -67,12 +67,6 @@ export class ThreeManager {
         fetchData();
     }
 
-    update() {
-        this.camera.update(this.inputData);
-        this.renderer.render(this.scene, this.camera.camera);
-    }
-
-
     initScene() {
         this.scene = new THREE.Scene();
         const loader = new GLTFLoader();
@@ -195,6 +189,9 @@ export class ThreeManager {
         // Music volume state
         this.musicVolume = 0.5; // Default 50%
         
+        // RGB light brightness state
+        this.rgbBrightness = 0.5; // Default 50% (intensity multiplier)
+        
         // Register ceiling light as interactive object
         this.interactionManager.registerInteractiveObject(
             'ceilingLight',
@@ -237,7 +234,7 @@ export class ThreeManager {
                 initialState: true,
                 onInteract: (state, lightObject) => {
                     console.log(`Mood light toggle! State: ${state}`);
-                    lightObject.intensity = state ? this.originalLightIntensities.moodLight : 0;
+                    lightObject.intensity = state ? this.originalLightIntensities.moodLight * this.rgbBrightness : 0;
                 }
             }
         );
@@ -330,6 +327,48 @@ export class ThreeManager {
                 }
             }
         );
+        
+        // Register RGB brightness up
+        this.interactionManager.registerInteractiveObject(
+            'rgbBrightnessUp',
+            this.moodLight,
+            {
+                key: KEY_BINDINGS.interactions.rgbBrightnessUp,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.rgbBrightness = Math.min(1.0, this.rgbBrightness + 0.1);
+                        const moodLightState = this.interactionManager.getObjectState('moodLight');
+                        if (moodLightState) {
+                            this.moodLight.intensity = this.originalLightIntensities.moodLight * this.rgbBrightness;
+                        }
+                        console.log(`RGB Brightness UP: ${Math.round(this.rgbBrightness * 100)}%`);
+                    }
+                }
+            }
+        );
+        
+        // Register RGB brightness down
+        this.interactionManager.registerInteractiveObject(
+            'rgbBrightnessDown',
+            this.moodLight,
+            {
+                key: KEY_BINDINGS.interactions.rgbBrightnessDown,
+                type: 'momentary',
+                initialState: false,
+                onInteract: (state) => {
+                    if (state) {
+                        this.rgbBrightness = Math.max(0.0, this.rgbBrightness - 0.1);
+                        const moodLightState = this.interactionManager.getObjectState('moodLight');
+                        if (moodLightState) {
+                            this.moodLight.intensity = this.originalLightIntensities.moodLight * this.rgbBrightness;
+                        }
+                        console.log(`RGB Brightness DOWN: ${Math.round(this.rgbBrightness * 100)}%`);
+                    }
+                }
+            }
+        );
     }
 
     initControls() {
@@ -377,7 +416,7 @@ export class ThreeManager {
             }
         }
         
-        this.camera.update(this.inputX, this.inputY, this.isTouching);
+        this.camera.update(this.inputData);
         this.renderer.render(this.scene, this.camera.camera);
     }
 
