@@ -6,7 +6,14 @@ from gestureHandler import GestureHandler
 
 app = Flask(__name__)
 
-input_data = {}
+input_data = {
+    "ceilingLight": 1,
+    "lamp": 1,
+    "volume": 1,
+    "door": -1,
+    "windows": -1
+}
+
 button_mapping = {
     "ceilingLight": "zr",
     "lamp": "r",
@@ -18,7 +25,6 @@ button_mapping = {
 def update():
     global input_data
     deadzone = 0.2
-
     gestureHandler = GestureHandler()
     tracking_gesture = False
 

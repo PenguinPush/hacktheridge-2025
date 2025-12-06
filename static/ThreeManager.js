@@ -2,6 +2,7 @@
 import * as THREE from "three";
 
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {Audio, AudioListener, AudioLoader} from "three";
 
 import {Camera} from "./Camera.js";
 
@@ -34,10 +35,12 @@ export class ThreeManager {
             ceilingLight: 1,
             lamp: 1,
             moodLight: 1,
-            volume: 0,
+            volume: 1,
             door: -1,
             windows: -1
         };
+
+        this.initMusicPlayer();
 
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -89,7 +92,7 @@ export class ThreeManager {
 
                 if (item.name && item.name.toLowerCase().includes('door')) {
                     this.doorMesh = item;
-                    this._doorRotation = item.rotation.y;
+                    this._doorPosition = item.position.x;
                 }
 
                 if (item.name && item.name.toLowerCase().includes('window')) {
@@ -141,11 +144,15 @@ export class ThreeManager {
         this.light.intensity = this.lightIntensities.ceilingLight * normalize(this.inputData.ceilingLight || 1, 0, 1);
         this.lamp.intensity = this.lightIntensities.lamp * normalize(this.inputData.lamp || 1, 0, 1);
         this.moodLight.intensity = this.lightIntensities.moodLight * normalize(this.inputData.moodLight || 1, 0, 1);
-        this.musicVolume = normalize(this.inputData.volume || 0, 0, 1);
+        this.musicVolume = normalize(this.inputData.volume || 1, 0, 1);
+
+        if (this.music) {
+            this.music.setVolume(this.musicVolume);
+        }
 
         if (this.doorMesh) {
-            const doorRotation = normalize(this.inputData.door || -1, 0, Math.PI / 2);
-            this.doorMesh.rotation.y = this._doorRotation + doorRotation;
+            const doorTranslation = normalize(this.inputData.door || -1, -0.6, 0);
+            this.doorMesh.position.x = this._doorPosition + doorTranslation;
         }
 
         if (this.windowMeshes) {
@@ -158,6 +165,21 @@ export class ThreeManager {
 
         this.camera.update(this.inputData);
         this.renderer.render(this.scene, this.camera.camera);
+    }
+
+    initMusicPlayer() {
+        const listener = new AudioListener();
+        this.camera.camera.add(listener);
+
+        this.music = new Audio(listener);
+        const audioLoader = new AudioLoader();
+
+        audioLoader.load("./static/assets/all_i_want_for_christmas_is_you.mp3", (buffer) => {
+            this.music.setBuffer(buffer);
+            this.music.setLoop(true);
+            this.music.setVolume(this.inputData.musicVolume);
+            this.music.play();
+        });
     }
 
     initAllThree() {
