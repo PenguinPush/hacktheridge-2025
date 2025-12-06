@@ -41,10 +41,10 @@ def update():
         if joycon_r:
             for event in joycon_r.events():
                 button, state = event
-                if button == "zr" and state == 1:
+                if state == 1:
                     joycon_r.reset_orientation()
                     tracking_gesture = True
-                elif button == "zr" and state == 0:
+                elif state == 0:
                     tracking_gesture = False
 
             if tracking_gesture:
@@ -52,7 +52,6 @@ def update():
                     tracking_gesture = False
 
             gesture = gestureHandler.update(joycon_r.pointer, tracking_gesture)
-            print(gesture)
             input_data["axis"] = gesture["axis"]
             input_data["value"] = gesture["value"]
 

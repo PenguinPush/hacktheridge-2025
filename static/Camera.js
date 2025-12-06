@@ -30,7 +30,7 @@ export class Camera {
         this.cameraControls.touches.three = CameraControls.ACTION.NONE;
 
         this.cameraControls.smoothTime = 0.1
-        this.cameraControls.moveTo(3, 1.2, 0, false);
+        this.cameraControls.moveTo(3, 1.15, 0, false);
 
         this.cameraControls.saveState();
         this.cameraControls.update(this.clock.getDelta());
@@ -44,8 +44,6 @@ export class Camera {
     }
 
     update(inputData) {
-        console.log(inputData)
-
         let targetRotation = -inputData.rotation;
         let currentRotation = this.cameraControls.azimuthAngle;
 
