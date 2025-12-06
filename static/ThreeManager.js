@@ -22,7 +22,7 @@ export class ThreeManager {
 
         this.camera = new Camera(app, this.renderer);
 
-        this.inputData = {rotation_x: 0, rotation_y: 0};
+        this.inputData = {rotation: 0};
 
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -50,7 +50,7 @@ export class ThreeManager {
             } catch (error) {
                 console.error("error:", error);
             } finally {
-                setTimeout(fetchData, 100); // Poll every 100ms
+                setTimeout(fetchData, 100);
             }
         };
 

@@ -46,11 +46,10 @@ export class Camera {
         let cameraPos = cameraPositions[this.index].pos
         this.cameraControls.moveTo(cameraPos[0], cameraPos[1], cameraPos[2], true)
 
-        let rotation_x = THREE.MathUtils.degToRad(this.inputData.rotation_x);
-        let rotation_y = THREE.MathUtils.degToRad(this.inputData.rotation_y);
-        this.cameraControls.rotateTo(rotation_x, rotation_y, true)
+        let rotation = inputData.rotation
+        this.cameraControls.rotateTo(rotation, 0, true)
 
-        console.log(this.inputData)
+        console.log(inputData)
         this.cameraControls.update(this.clock.getDelta());
     }
 }
