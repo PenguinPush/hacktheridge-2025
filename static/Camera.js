@@ -18,11 +18,12 @@ export class Camera {
         this.camera = new THREE.PerspectiveCamera(THREE.MathUtils.clamp(baseFov / (window.innerWidth / window.innerHeight) * 1.5, minFov, maxFov), window.innerWidth / window.innerHeight, 0.1, 1000);
         this.cameraControls = new CameraControls(this.camera, this.renderer.domElement);
         this.clock = new THREE.Clock();
+        this.serverData = { rotation_x: 0, rotation_y: 0, rotation_z: 0 };
     }
 
     initCamera() {
-        let cameraPos = cameraPositions[this.index].pos
-        let cameraRot = cameraPositions[this.index].rot
+        let cameraPos = cameraPositions[this.index].pos;
+        let cameraRot = cameraPositions[this.index].rot;
 
         this.camera.position.set(cameraPos[0], cameraPos[1], cameraPos[2]);
         this.cameraControls.rotateTo(cameraRot[0], cameraRot[1], false);
@@ -37,7 +38,9 @@ export class Camera {
         this.cameraControls.touches.three = CameraControls.ACTION.NONE;
 
         this.cameraControls.saveState();
-        this.cameraControls.update(this.clock.getDelta())
+        this.cameraControls.update(this.clock.getDelta());
+
+        this.fetchInputData();
     }
 
     resize() {
@@ -48,11 +51,31 @@ export class Camera {
     }
 
     update() {
-        let cameraPos = cameraPositions[this.index].pos
-        let cameraRot = cameraPositions[this.index].rot
-        this.cameraControls.moveTo(cameraPos[0], cameraPos[1], cameraPos[2], true)
-        this.cameraControls.rotateTo(cameraRot[0], cameraRot[1], true)
+        this.camera.rotation.x = THREE.MathUtils.degToRad(this.serverData.rotation_x);
+        this.camera.rotation.y = THREE.MathUtils.degToRad(this.serverData.rotation_y);
+        this.camera.rotation.z = THREE.MathUtils.degToRad(this.serverData.rotation_z);
 
-        this.cameraControls.update(this.clock.getDelta())
+        this.cameraControls.update(this.clock.getDelta());
+    }
+
+    fetchInputData() {
+        const url = "http://127.0.0.1:5000/input_data";
+
+        const fetchData = async () => {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    this.serverData = await response.json();
+                } else {
+                    console.error("failed to fetch");
+                }
+            } catch (error) {
+                console.error("error:", error);
+            } finally {
+                setTimeout(fetchData, 100);
+            }
+        };
+
+        fetchData();
     }
 }
