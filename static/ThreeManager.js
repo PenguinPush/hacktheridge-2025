@@ -46,7 +46,7 @@ export class ThreeManager {
     }
 
     fetchInputData() {
-        const url = "http://127.0.0.1:5001/input_data";
+        const url = "http://127.0.0.1:5000/input_data";
 
         const fetchData = async () => {
             try {
