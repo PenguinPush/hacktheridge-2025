@@ -420,4 +420,86 @@ export class ThreeManager {
 
         this.update()
     }
+
+    /**
+     * Set ceiling light brightness
+     * @param {number} brightness - Brightness value from 0.0 to 1.0
+     */
+    setCeilingLightBrightness(brightness) {
+        brightness = Math.max(0, Math.min(1, brightness));
+        this.light.intensity = this.originalLightIntensities.ceilingLight * brightness;
+        this.interactionManager.setObjectState('ceilingLight', brightness > 0);
+        this.renderer.shadowMap.needsUpdate = true;
+        console.log(`Ceiling light brightness set to ${Math.round(brightness * 100)}%`);
+    }
+
+    /**
+     * Set lamp brightness
+     * @param {number} brightness - Brightness value from 0.0 to 1.0
+     */
+    setLampBrightness(brightness) {
+        brightness = Math.max(0, Math.min(1, brightness));
+        this.lamp.intensity = this.originalLightIntensities.lamp * brightness;
+        this.interactionManager.setObjectState('lamp', brightness > 0);
+        this.renderer.shadowMap.needsUpdate = true;
+        console.log(`Lamp brightness set to ${Math.round(brightness * 100)}%`);
+    }
+
+    /**
+     * Set mood light (RGB) brightness
+     * @param {number} brightness - Brightness value from 0.0 to 1.0
+     */
+    setMoodLightBrightness(brightness) {
+        brightness = Math.max(0, Math.min(1, brightness));
+        this.rgbBrightness = brightness;
+        this.moodLight.intensity = this.originalLightIntensities.moodLight * brightness;
+        this.interactionManager.setObjectState('moodLight', brightness > 0);
+        console.log(`Mood light brightness set to ${Math.round(brightness * 100)}%`);
+    }
+
+    /**
+     * Set TV state
+     * @param {boolean} on - True for on, false for off
+     */
+    setTVState(on) {
+        this.tvState.on = on;
+        this.interactionManager.setObjectState('tv', on);
+        console.log(`TV set to ${on ? 'ON' : 'OFF'}`);
+        // TODO: Update TV material/emission when TV mesh is identified
+    }
+
+    /**
+     * Set door open amount
+     * @param {number} amount - Open amount from 0.0 (closed) to 1.0 (fully open)
+     */
+    setDoorOpen(amount) {
+        amount = Math.max(0, Math.min(1, amount));
+        this.doorState.open = amount > 0;
+        this.doorState.targetRotation = amount * (Math.PI / 2);
+        this.interactionManager.setObjectState('door', amount > 0);
+        console.log(`Door set to ${Math.round(amount * 100)}% open`);
+    }
+
+    /**
+     * Set windows open amount
+     * @param {number} amount - Open amount from 0.0 (closed) to 1.0 (fully open)
+     */
+    setWindowsOpen(amount) {
+        amount = Math.max(0, Math.min(1, amount));
+        this.windowsState.open = amount > 0;
+        this.windowsState.targetRotation = amount * (Math.PI / 4);
+        this.interactionManager.setObjectState('windows', amount > 0);
+        console.log(`Windows set to ${Math.round(amount * 100)}% open`);
+    }
+
+    /**
+     * Set music volume
+     * @param {number} volume - Volume from 0.0 to 1.0
+     */
+    setMusicVolume(volume) {
+        volume = Math.max(0, Math.min(1, volume));
+        this.musicVolume = volume;
+        console.log(`Music volume set to ${Math.round(volume * 100)}%`);
+        // TODO: Update audio volume when audio is implemented
+    }
 }
